@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Find the project
+      - name: Find the project (works with extracted files or an uploaded ZIP)
         run: |
           if [ -f settings.gradle ]; then
             echo "PROJECT_DIR=." >> "$GITHUB_ENV"
@@ -25,7 +25,11 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - uses: android-actions/setup-android@v3
+      - name: Prepare Android SDK (preinstalled on the runner)
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-35" "build-tools;34.0.0" || true
 
       - uses: gradle/actions/setup-gradle@v4
         with:
@@ -35,7 +39,7 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: gradle assembleDebug --no-daemon
 
-      - name: Run unit tests
+      - name: Run unit tests (does not block the APK)
         working-directory: ${{ env.PROJECT_DIR }}
         continue-on-error: true
         run: gradle test --no-daemon
